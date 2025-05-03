@@ -1,0 +1,50 @@
+version: "3.7"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13.7-management-alpine
+    hostname: rabbitmq
+    entrypoint: docker-entrypoint.sh
+    command: rabbitmq-server
+    networks:
+      - network_swarm_public
+    ports:
+      - 5672:5672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      # /mnt/VOLUME/rabbitmq:/var/lib/rabbitmq/
+    environment:
+      # Gerar strings fortes em: https://acte.ltd/utils/randomkeygen
+      - RABBITMQ_ERLANG_COOKIE=ED8MguofPhO3WR9d # STRING FORTE
+      - RABBITMQ_DEFAULT_VHOST=default
+      - RABBITMQ_DEFAULT_USER=LYRqzg1BvVNZxApO # STRING FORTE
+      - RABBITMQ_DEFAULT_PASS=6CfHaOXaCbN62bH5 # STRING FORTE
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+          # - node.hostname == database01
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.rabbitmq.rule=Host(`queues.ogeraldoluiz.com`) # ALTERAR ENDERECO
+        - traefik.http.routers.rabbitmq.entrypoints=websecure
+        - traefik.http.routers.rabbitmq.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.rabbitmq.service=rabbitmq
+        - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
+        - traefik.http.services.rabbitmq.loadbalancer.passHostHeader=true
+
+volumes:
+  rabbitmq_data:
+    external: true
+    name: rabbitmq_data
+
+networks:
+  network_swarm_public:
+    name: network_swarm_public
+    external: true
